@@ -42,10 +42,9 @@ function updateAddress(req, res) {
 				break;
 			case "SET_DEFAULT":
 				user.address.forEach((addressItem) => {
-					if (addressItem._id.toString() === req.body._id) user.address.id(addressItem._id).default = true;
-					else user.address.id(addressItem._id).default = false;
+					if (addressItem._id.toString() === req.body._id) user.address.id(addressItem._id)._doc.default = true;
+					else user.address.id(addressItem._id)._doc.default = false;
 				});
-
 				break;
 			case "DELETE":
 				user.address.id(req.body._id).remove();
@@ -71,8 +70,8 @@ function updateCards(req, res) {
 				break;
 			case "SET_DEFAULT":
 				user.cards.forEach((cardItem) => {
-					if (cardItem._id.toString() === req.body._id) user.cards.id(cardItem._id).default = true;
-					else user.cards.id(cardItem._id).default = false;
+					if (cardItem._id.toString() === req.body._id) user.cards.id(cardItem._id)._doc.default = true;
+					else user.cards.id(cardItem._id)._doc.default = false;
 				});
 				break;
 			case "DELETE":
