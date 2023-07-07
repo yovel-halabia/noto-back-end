@@ -18,8 +18,16 @@ const cardSchema = new mongoose.Schema({
 	default: Boolean,
 });
 
+const cartSchema = new mongoose.Schema({
+	title: {type: String, required: true},
+	img: {type: String, required: true},
+	color: {type: String, required: true},
+	size: {type: String, required: true},
+	qty: {type: Number, required: true},
+});
+
 const orderSchema = new mongoose.Schema({
-	items: Array,
+	items: [cartSchema],
 	address: addressSchema,
 });
 
@@ -44,9 +52,8 @@ const userSchema = new mongoose.Schema({
 	},
 	address: [addressSchema],
 	cards: [cardSchema],
-	cartItems: {items: Array, total: {type: Number, default: 0}},
-	wishlistItems: Array,
-	lastItems: Array,
+	cartItems: [cartSchema],
+	wishlistItems: [cartSchema],
 	orders: [orderSchema],
 });
 
