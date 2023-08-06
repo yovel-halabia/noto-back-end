@@ -2,6 +2,7 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const mongoose = require("mongoose");
+const {mOut} = require("./utils");
 const {authController, productsController, userController} = require("./controllers");
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -15,23 +16,21 @@ mongoose.connect(process.env.MONGODB_ACCESS_LINK, {
 });
 
 //routes
-app.get("/tst", (req, res, next) => {
-	next();
-});
 app.use("/api/user", userController);
 app.use("/api/products", productsController);
 app.use("/api/auth", authController);
 
-//general error
-app.use((req, res) => {
-	res.status(500).json({alertMessage: "internal server error"});
-});
-
-
 //frontend
-app.get("/*", (req, res) => {
+app.get("/*", (req, res, next) => {
+	if (!req.accepts().indexOf("text/html") === -1) next();
 	res.sendFile("index.html", {root: path.join(__dirname, "public")});
 });
+
+//general error
+app.use((req, res) => {
+	mOut({status: 500, data: "internal server error", res});
+});
+
 
 //checkups
 mongoose.connection.on("connected", () => {

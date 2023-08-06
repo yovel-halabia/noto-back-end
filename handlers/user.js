@@ -1,172 +1,195 @@
-const {User} = require("../schemas");
+const {User, Product} = require("../schemas");
 const {mOut} = require("../utils");
 
-const VALID_FIELDS = [
-"password",
-"fullName",
-"password",
-"address",
-"cards",
-"wishlistItems",
-];
+const VALID_FIELDS = ["email", "password", "fullName", "address", "cards", "cartItems", "wishlistItems"];
+const VALID_FIELDS_TO_RES = ["email", "fullName", "address", "cards", "cartItems", "wishlistItems", "orders"];
 
 async function getUser(req, res, next) {
 	try {
 		const user = await User.findOne({_id: req.user.userId});
 		if (!user) next();
-		return mOut({
-			success: true,
-			data: {
-				//TODO: find way to beutify this data object
-				fullName: user.fullName,
-				email: user.email,
-				address: user.address,
-				cards: user.cards.map((item) => {
-					return {
-						_id: item._id,
-						date: item.date,
-						cvv: item.cvv,
-						default: item.default,
-						company: item.company,
-						number: "**** **** **** " + item.number.split(" ")[3],
-					};
-				}),
-				cartItems: user.cartItems,
-				wishlistItems: user.wishlistItems,
-				orders: user.orders,
-			},
-			res,
-		});
-	} catch (e){
+		const data = await data2res(user, Object.keys(user._doc));
+		return mOut({success: true, data, res});
+	} catch (e) {
 		next();
 	}
 }
 
-
 async function updateUserFiled(req, res, next) {
-
 	try {
 		const user = await User.findOne({_id: req.user.userId});
 		if (!user) next();
 
-		for(var key in req.body){
+		for (var key in req.body) {
 			const field = req.body[key];
-			if(!user._doc[key] || !VALID_FIELDS.includes(key)) return mOut({success: false, data: "bad request", res, status: 400});
+			if (!field) continue;
+			if (!user[key] || !VALID_FIELDS.includes(key)) return mOut({success: false, data: "bad request", res, status: 400});
 
-			if(Array.isArray(user._doc[key])){
-				if(!user._doc[key].id(field._id)) return mOut({success: false,data:"fail to update field",res});
-				user._doc[key].id(field._id)._doc = field;
-			} 
-			else  user[key] = field;
-
+			if (Array.isArray(user[key])) {
+				if (!user[key].id(field._id)) return mOut({success: false, data: "fail to update field", res});
+				user[key].id(field._id)._doc = field;
+			} else user[key] = field;
 		}
 
 		const save = await user.save();
 		if (!save) next();
 
-		return mOut({success: true, data: "fields updated succefully", res});
+		const data = await data2res(save, Object.keys(req.body));
 
-
-
-	} catch (e){
-		if(e._message) return mOut({success:false,data:e._message,res});
+		return mOut({success: true, data, res});
+	} catch (e) {
+		if (e.code === 11000)
+			//try to use mail that already exist
+			return mOut({success: false, data: {email: "Email already exist"}, res});
+		if (e.errors) {
+			//field validation error
+			const errors = {};
+			for (var key in e.errors) {
+				errors[key] = e.errors[key].message;
+			}
+			return mOut({success: false, data: errors, res});
+		}
+		if (e._message) return mOut({success: false, data: e._message, res});
 		next();
 	}
 }
 
+async function addUserItem(req, res, next) {
+	try {
+		const user = await User.findOne({_id: req.user.userId});
+		if (!user) next();
+		for (var key in req.body) {
+			if (!user[key] || !Array.isArray(user[key]) || !VALID_FIELDS.includes(key) || key === "orders")
+				return mOut({success: false, data: "bad request", res, status: 400});
+			const field = req.body[key];
+			if (user[key].id(field._id)) return mOut({success: false, data: "item already added", res});
+			user[key].push(field);
+		}
+
+		const save = await user.save();
+		if (!save) next();
+
+		const data = await data2res(save, Object.keys(req.body));
+
+		return mOut({success: true, data, res});
+	} catch (e) {
+		if (e.errors) {
+			//field validation error
+			const errors = {};
+			for (var key in e.errors) {
+				errors[key] = e.errors[key].message;
+			}
+			return mOut({success: false, data: errors, res});
+		}
+		if (e._message) return mOut({success: false, data: e._message, res});
+		next();
+	}
+}
 
 async function setUserDefault(req, res, next) {
-	
 	try {
 		const user = await User.findOne({_id: req.user.userId});
 		if (!user) next();
 
 		var setSuccess = false;
-		for(var key in req.body){
-			if(!user._doc[key] || !Array.isArray(user._doc[key]) || !['cards','address'].includes(key)) return mOut({success: false, data: "bad request", res, status: 400});
-			
+		for (var key in req.body) {
+			if (!user[key] || !Array.isArray(user[key]) || !["cards", "address"].includes(key))
+				return mOut({success: false, data: "bad request", res, status: 400});
+
 			const {_id} = req.body[key];
-			user[key] = user[key].map((item)=>{
-				item._doc.default = item._id.toString() === _id ? true : false;
-				setSuccess = true;
+			user[key] = user[key].map((item) => {
+				item._doc.default = item._id.toString() === _id;
+				if (item._id.toString() === _id) setSuccess = true;
 				return item;
 			});
 		}
 
-		if(!setSuccess)return mOut({success: false, data: "fail set field to default", res});
+		if (!setSuccess) return mOut({success: false, data: "fail set field to default", res});
 
 		const save = await user.save();
 		if (!save) next();
 
 		return mOut({success: true, data: "field set to default", res});
-	} catch (e){
+	} catch (e) {
+		console.log(e);
 		next();
 	}
 }
 
 async function deleteUserItem(req, res, next) {
-
 	try {
 		const user = await User.findOne({_id: req.user.userId});
 		if (!user) next();
 
-		for(var key in req.body){
-			if(!user._doc[key] || !Array.isArray(user._doc[key]) || !VALID_FIELDS.includes(key) ) return mOut({success: false, data: "bad request", res, status: 400});
+		for (var key in req.body) {
+			if (!user[key] || !Array.isArray(user[key]) || !VALID_FIELDS.includes(key))
+				return mOut({success: false, data: "bad request", res, status: 400});
 			const {_id} = req.body[key];
-			if(!user._doc[key].id(_id)) return mOut({success: false, data:"fail to delete item",res});
-			user._doc[key] = user._doc[key].filter((item)=>item._id.toString() !== _id);
+			if (!user[key].id(_id)) return mOut({success: false, data: "fail to delete item", res});
+			user[key] = user[key].filter((item) => item._id.toString() !== _id);
 		}
 
 		const save = await user.save();
 		if (!save) next();
 
-		return mOut({success: true, data: "field delete successfully", res});
+		return mOut({success: true, data: "item removed successfully", res});
 	} catch {
 		next();
 	}
 }
 
-
-
-async function addUserItem(req,res,next){
-	
+async function pay(req, res, next) {
 	try {
 		const user = await User.findOne({_id: req.user.userId});
-		if (!user) next();
-		for(var key in req.body){
-			if(!user._doc[key] || !Array.isArray(user._doc[key]) || (!VALID_FIELDS.includes(key) || key === 'orders')) return mOut({success: false, data: "bad request", res, status: 400});
-			const field = req.body[key];
-			if(user._doc[key].id(field._id)) return mOut({success:false,data:"item already added",res});
-			user._doc[key].push(field);
-		}
+		user["orders"].push(req.body);
+		user["cartItems"] = [];
 
 		const save = await user.save();
-		if(!save) next();
+		if (!save) next();
 
-		return mOut({success:true,data:"items added successfully",res});
-
-
-
-	}catch(e){
-		if(e._message) return mOut({success:false,data:e._message,res});
+		const data = await data2res(save, ["orders", "cartItems"]);
+		return mOut({success: true, data, res});
+	} catch {
 		next();
 	}
-} 
+}
 
+async function data2res(data, fields) {
+	data = data.toObject();
+	var res = {};
+	for (var field of fields) {
+		if (!VALID_FIELDS_TO_RES.includes(field)) continue;
 
+		//special cases
+		if (field === "cards") {
+			res[field] = data[field].map((item) => {
+				return {...item, number: "**** **** **** " + item.number.split(" ")[3]};
+			});
+		} else if (field === "cartItems" || field === "wishlistItems") {
+			res[field] = await Promise.all(
+				data[field].map(async (item) => {
+					const product = await Product.findOne({_id: item.productID});
 
-function pay(req, res) {
-	User.findOne({_id: req.user.userId}, (err, user) => {
-		if (err) return res.status(500).json({generalError: "internal server error"});
-		if (!user) res.status(401).json({authErr: "user not exist"});
+					return {...item, productData: {...product._doc}};
+				}),
+			);
+		} else if (field === "orders") {
+			res[field] = await Promise.all(
+				data[field].map(async (order) => {
+					order.items = await Promise.all(
+						order.items.map(async (item) => {
+							const product = await Product.findOne({_id: item.productID});
 
-		user.orders.push(req.body);
+							return {...item, productData: {...product._doc}};
+						}),
+					);
+					return order;
+				}),
+			);
+		} else res[field] = data[field];
+	}
 
-		user.save((err, data) => {
-			if (err) return res.status(500).json({generalError: "internal server error"});
-			return res.status(200).json({updatedData: {orders: data.orders}});
-		});
-	});
+	return res;
 }
 
 module.exports = {

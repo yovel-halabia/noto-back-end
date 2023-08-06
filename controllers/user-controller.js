@@ -11,7 +11,7 @@ router.post("/add-item", authenticateToken, addUserItem);
 //POST  /api/user/delete-item
 router.post("/delete-item", authenticateToken, deleteUserItem);
 
-//POST  /api/user/update-address
+//POST  /api/user/update-field
 router.post("/update-field", authenticateToken, updateUserFiled);
 
 //POST /api/user/set-default

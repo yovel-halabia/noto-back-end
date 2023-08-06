@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const {getCategoryProducts, getProduct, getSalesProduct} = require("../handlers/product");
 
-//GET api/products/:categoryId
+//GET api/products/category/:categoryId
 router.get("/category/:categoryId", getCategoryProducts);
 
 //GET api/products/product/:productId
