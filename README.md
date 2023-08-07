@@ -1,7 +1,7 @@
 # NOTO E-commerce
 > This is my first project of frontend and backend development
 
-> Live demo [_here_]([https://noto-website.herokuapp.com/](https://noto-yovel-halabia.vercel.app/)).
+> Live demo [_here_](https://noto-yovel-halabia.vercel.app/).
 
 ## Table of Contents
 * [General Info](#general-information)
