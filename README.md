@@ -45,11 +45,8 @@ To setup local environment:<br/>
 require: nodeJS version >= 18.12.1<br/>
 Clone the repository to your local machine<br/>
 Open the project in the IDE and run the following command in terminal:<br/>
-`cd noto_front`</br>
 `npm start`<br/>
-open new tab<br/>
-`cd noto_back`</br>
-`npm start`
+Then go to FE repo and do the same thing [NOTO FE](https://github.com/yovel-halabia/noto-front-end)
 
 
 ## Project Status
