@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 //connect to DB
+mongoose.set("strictQuery", false);
 mongoose.connect(process.env.MONGODB_ACCESS_LINK, {
 	useNewUrlParser: true,
 	useUnifiedTopology: true,
