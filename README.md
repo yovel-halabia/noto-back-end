@@ -1,7 +1,7 @@
 
 # NOTO E-commerce
 
-Live demo [_here_](https://noto-yovel-halabia.vercel.app/).
+Live demo [_here_](https://noto-self.vercel.app/).
 
 ## General Information
 - This project is demo E-commerce website, you can order and make a purchase.
